@@ -1308,6 +1308,9 @@ boolean Adafruit_FONA::HTTP_action(uint8_t method, uint16_t *status,
 
   // Parse response status and size.
   readline(timeout);
+#ifdef ADAFRUIT_FONA_DEBUG
+    Serial.print(F("\t(Added debug)<--- ")); Serial.println(replybuffer);
+#endif
   if (! parseReply(F("+HTTPACTION:"), status, ',', 1))
     return false;
   if (! parseReply(F("+HTTPACTION:"), datalen, ',', 2))
