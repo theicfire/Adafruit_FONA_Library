@@ -721,7 +721,7 @@ uint8_t Adafruit_FONA::getGPS(uint8_t arg, char *buffer, uint8_t maxbuff) {
   return len;
 }
 
-boolean Adafruit_FONA::getGPS(float *lat, float *lon, float *speed_kph, float *heading, float *altitude, char* date) {
+boolean Adafruit_FONA::getGPS(float *lat, float *lon, float *speed_kph, float *heading, float *altitude) {
 
   char gpsbuffer[120];
 
@@ -901,9 +901,8 @@ boolean Adafruit_FONA::getGPS(float *lat, float *lon, float *speed_kph, float *h
     char *altp = strtok(NULL, ",");
     if (! altp) return false;
 
-    // Grab date
+    // skip date
     tok = strtok(NULL, ",");
-    strcpy(date, tok);
     if (! tok) return false;
 
     *altitude = atof(altp);
