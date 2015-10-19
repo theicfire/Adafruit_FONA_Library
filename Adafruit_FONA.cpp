@@ -124,6 +124,7 @@ boolean Adafruit_FONA::readRTC(uint8_t *year, uint8_t *month, uint8_t *date, uin
   *year = v;
 
   Serial.println(*year);
+  return true;
 }
 
 boolean Adafruit_FONA::enableRTC(uint8_t i) {
@@ -167,7 +168,7 @@ uint8_t Adafruit_FONA::unlockSIM(char *pin)
   sendbuff[9] = pin[1];
   sendbuff[10] = pin[2];
   sendbuff[11] = pin[3];
-  sendbuff[12] = NULL;
+  sendbuff[12] = 0;
 
   return sendCheckReply(sendbuff, "OK");
 }
@@ -261,7 +262,7 @@ boolean Adafruit_FONA_3G::playToolkitTone(uint8_t t, uint16_t len) {
   if (! sendCheckReply(F("AT+CPTONE="), t, F("OK")))
     return false;
   delay(len);
-  sendCheckReply(F("AT+CPTONE=0"), F("OK"));
+  return sendCheckReply(F("AT+CPTONE=0"), F("OK"));
 }
 
 boolean Adafruit_FONA::setMicVolume(uint8_t a, uint8_t level) {
@@ -727,7 +728,12 @@ uint8_t Adafruit_FONA::getGPS(uint8_t arg, char *buffer, uint8_t maxbuff) {
 
   p+=6;
 
-  uint8_t len = max(maxbuff-1, strlen(p));
+  uint8_t len = strlen(p);
+  if (len < 0) {
+    return -1;
+  } else if (maxbuff-1 < len) {
+    len = maxbuff-1;
+  }
   strncpy(buffer, p, len);
   buffer[len] = 0;
 
@@ -1156,6 +1162,7 @@ boolean Adafruit_FONA::TCPconnect(char *server, uint16_t port) {
 
   if (! expectReply(F("OK"))) return false;
   if (! expectReply(F("CONNECT OK"))) return false;
+  return true;
 }
 
 boolean Adafruit_FONA::TCPclose(void) {
@@ -1578,7 +1585,7 @@ uint8_t Adafruit_FONA::readline(uint16_t timeout, boolean multiline) {
   return replyidx;
 }
 
-uint8_t Adafruit_FONA::getReply(char *send, uint16_t timeout) {
+uint8_t Adafruit_FONA::getReply(const char *send, uint16_t timeout) {
   flushInput();
 
 #ifdef ADAFRUIT_FONA_DEBUG
@@ -1688,7 +1695,7 @@ uint8_t Adafruit_FONA::getReplyQuoted(const __FlashStringHelper *prefix, const _
   return l;
 }
 
-boolean Adafruit_FONA::sendCheckReply(char *send, char *reply, uint16_t timeout) {
+boolean Adafruit_FONA::sendCheckReply(const char *send, const char *reply, uint16_t timeout) {
   getReply(send, timeout);
 
 /*
