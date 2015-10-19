@@ -113,7 +113,7 @@ uint8_t Adafruit_FONA::read_rdy(void) {
 }
 boolean Adafruit_FONA::setBaudrate(uint16_t baud) {
   return sendCheckReply(F("AT+IPR="), baud, F("OK")) &&
-    fona.sendCheckReply(F("AT&W0"), F("OK"));
+    sendCheckReply(F("AT&W0"), F("OK"));
 }
 
 /********* Real Time Clock ********************************************/
