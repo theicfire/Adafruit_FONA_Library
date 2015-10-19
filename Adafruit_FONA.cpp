@@ -49,6 +49,8 @@ uint8_t Adafruit_FONA::type(void) {
 boolean Adafruit_FONA::begin(Stream &port) {
   mySerial = &port;
 
+  while (mySerial->available()) mySerial->read();
+
   pinMode(_rstpin, OUTPUT);
   digitalWrite(_rstpin, HIGH);
   delay(10);
@@ -56,17 +58,15 @@ boolean Adafruit_FONA::begin(Stream &port) {
   delay(100);
   digitalWrite(_rstpin, HIGH);
 
-  // give 7 seconds to reboot
-  delay(7000);
-
-  while (mySerial->available()) mySerial->read();
-
-  sendCheckReply(F("AT"), F("OK"));
-  delay(100);
-  sendCheckReply(F("AT"), F("OK"));
-  delay(100);
-  sendCheckReply(F("AT"), F("OK"));
-  delay(100);
+  if (read_rdy() == 1) {
+    // Only need to run these if autobauding
+    sendCheckReply(F("AT"), F("OK"));
+    delay(100);
+    sendCheckReply(F("AT"), F("OK"));
+    delay(100);
+    sendCheckReply(F("AT"), F("OK"));
+    delay(100);
+  }
 
   // turn off Echo!
   sendCheckReply(F("ATE0"), F("OK"));
@@ -98,8 +98,22 @@ boolean Adafruit_FONA::begin(Stream &port) {
 
 
 /********* Serial port ********************************************/
+uint8_t Adafruit_FONA::read_rdy(void) {
+  readline(1000);
+  if (strlen(replybuffer)) {
+    if (strcmp(replybuffer, "RDY") != 0) {
+      Serial.println("Got weird unsolicted output: "); Serial.println(replybuffer);
+      return -1;
+    }
+    return 0;
+  } else {
+    Serial.println("Autobauding is happening.");
+    return 1;
+  }
+}
 boolean Adafruit_FONA::setBaudrate(uint16_t baud) {
-  return sendCheckReply(F("AT+IPREX="), baud, F("OK"));
+  return sendCheckReply(F("AT+IPR="), baud, F("OK")) &&
+    fona.sendCheckReply(F("AT&W0"), F("OK"));
 }
 
 /********* Real Time Clock ********************************************/
@@ -935,8 +949,13 @@ boolean Adafruit_FONA::enableGPSNMEA(uint8_t i) {
 /********* GPRS **********************************************************/
 
 
+// TODO make tryEnableGPRS and enableGPRS, where the latter loops over the former.
 boolean Adafruit_FONA::enableGPRS(boolean onoff) {
 
+  uint8_t state = GPRSstate();
+  if (state == 1) {
+    return true;
+  }
   if (onoff) {
     // disconnect all sockets
     sendCheckReply(F("AT+CIPSHUT"), F("SHUT OK"), 5000);
