@@ -185,6 +185,7 @@ class Adafruit_FONA : public Stream {
   boolean expectReply(const __FlashStringHelper *reply, uint16_t timeout = 10000);
   boolean sendCheckReply(const char *send, const char *reply, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
   boolean sendCheckReply(const __FlashStringHelper *send, const __FlashStringHelper *reply, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
+  uint8_t read_rdy(void);
 
 
  protected:
