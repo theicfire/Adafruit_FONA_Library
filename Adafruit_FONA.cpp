@@ -957,11 +957,8 @@ boolean Adafruit_FONA::enableGPSNMEA(uint8_t i) {
 
 // TODO make tryEnableGPRS and enableGPRS, where the latter loops over the former.
 boolean Adafruit_FONA::enableGPRS(boolean onoff) {
-
-  uint8_t state = GPRSstate();
-  if (state == 1) {
-    return true;
-  }
+  // Turn off CGATT because SAPBR=1,1 (futher down) won't work twice in a row. But running this first will allow SAPBR=1,1 work.
+  sendCheckReply(F("AT+CGATT=0"), F("OK"), 10000);
   if (onoff) {
     // disconnect all sockets
     sendCheckReply(F("AT+CIPSHUT"), F("SHUT OK"), 5000);
