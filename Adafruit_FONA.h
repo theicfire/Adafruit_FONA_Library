@@ -185,14 +185,18 @@ class Adafruit_FONA : public Stream {
   boolean expectReply(const __FlashStringHelper *reply, uint16_t timeout = 10000);
   boolean sendCheckReply(const char *send, const char *reply, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
   boolean sendCheckReply(const __FlashStringHelper *send, const __FlashStringHelper *reply, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
+  boolean sendParseReply(const __FlashStringHelper *tosend,
+       const __FlashStringHelper *toreply,
+       uint16_t *v, char divider = ',', uint8_t index=0);
   uint8_t read_rdy(void);
+  uint8_t readline(uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS, boolean multiline = false);
+  char replybuffer[255];
 
 
  protected:
   int8_t _rstpin;
   uint8_t _type;
 
-  char replybuffer[255];
   const __FlashStringHelper *apn;
   const __FlashStringHelper *apnusername;
   const __FlashStringHelper *apnpassword;
@@ -204,7 +208,6 @@ class Adafruit_FONA : public Stream {
 
   void flushInput();
   uint16_t readRaw(uint16_t b);
-  uint8_t readline(uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS, boolean multiline = false);
   uint8_t getReply(const char *send, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
   uint8_t getReply(const __FlashStringHelper *send, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
   uint8_t getReply(const __FlashStringHelper *prefix, char *suffix, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
@@ -218,6 +221,7 @@ class Adafruit_FONA : public Stream {
   boolean sendCheckReplyQuoted(const __FlashStringHelper *prefix, const __FlashStringHelper *suffix, const __FlashStringHelper *reply, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
 
 
+
   boolean parseReply(const __FlashStringHelper *toreply,
           uint16_t *v, char divider  = ',', uint8_t index=0);
   boolean parseReply(const __FlashStringHelper *toreply,
@@ -225,9 +229,6 @@ class Adafruit_FONA : public Stream {
   boolean parseReplyQuoted(const __FlashStringHelper *toreply,
           char *v, int maxlen, char divider, uint8_t index);
 
-  boolean sendParseReply(const __FlashStringHelper *tosend,
-       const __FlashStringHelper *toreply,
-       uint16_t *v, char divider = ',', uint8_t index=0);
 
   static boolean _incomingCall;
   static void onIncomingCall();
