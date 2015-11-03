@@ -71,6 +71,12 @@ boolean Adafruit_FONA::begin(Stream &port) {
   // turn off Echo!
   sendCheckReply(F("ATE0"), F("OK"));
   delay(100);
+  // Turn off SMS URC's
+  sendCheckReply(F("AT+CNMI=2,0,0,0,0"), F("OK"));
+  delay(100);
+  // Turn off sim card URC's
+  sendCheckReply(F("AT+CSMINS=0"), F("OK"));
+  delay(100);
 
   if (! sendCheckReply(F("ATE0"), F("OK"))) {
     return false;
