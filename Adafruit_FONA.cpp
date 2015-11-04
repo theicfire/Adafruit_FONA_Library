@@ -74,6 +74,9 @@ boolean Adafruit_FONA::begin(Stream &port) {
   // Turn off SMS URC's
   sendCheckReply(F("AT+CNMI=2,0,0,0,0"), F("OK"));
   delay(100);
+  // Ring number
+  sendCheckReply(F("AT+CLIP=1"), F("OK"));
+  delay(100);
   // Turn off sim card URC's
   sendCheckReply(F("AT+CSMINS=0"), F("OK"));
   delay(100);
@@ -1552,8 +1555,49 @@ uint16_t Adafruit_FONA::readRaw(uint16_t b) {
   return idx;
 }
 
+uint8_t Adafruit_FONA::readring(void) {
+  uint16_t replyidx = 0;
+  bool done = false;
+
+  while (true) {
+    if (replyidx >= 254) {
+      //Serial.println(F("SPACE"));
+      break;
+    }
+
+    while(mySerial->available()) {
+      char c = mySerial->read();
+      if (c == '\r') continue;
+      if (c == 0xA) {
+        if (replyidx == 0)   // the first 0x0A is ignored
+          continue;
+
+        if (memcmp("RING", replybuffer, 4) == 0) {
+          Serial.println("RING skipped");
+          replyidx = 0;
+          continue;
+        } else if (memcmp("+CLIP", replybuffer, 4) == 0) {
+          Serial.print("Copy phone number ");
+          Serial.println(replybuffer);
+          memcpy(calling_number, replybuffer + 8, 11);
+          calling_number[11] = 0;
+          replybuffer[replyidx + 1] = 0;  // null term
+          return 1;
+        } else {
+          return -1;
+        }
+      }
+      replybuffer[replyidx] = c;
+      replyidx++;
+    }
+    delay(1);
+  }
+  return -1;
+}
+
 uint8_t Adafruit_FONA::readline(uint16_t timeout, boolean multiline) {
   uint16_t replyidx = 0;
+  uint16_t old_timeout = timeout;
 
   while (timeout--) {
     if (replyidx >= 254) {
@@ -1569,8 +1613,23 @@ uint8_t Adafruit_FONA::readline(uint16_t timeout, boolean multiline) {
           continue;
 
         if (!multiline) {
-          timeout = 0;         // the second 0x0A is the end of the line
-          break;
+          if (memcmp("RING", replybuffer, 4) == 0) {
+            Serial.println("RING skipped");
+            timeout = old_timeout + 100; // Increase the timeout somehow
+            replyidx = 0;
+            continue;
+          } else if (memcmp("+CLIP", replybuffer, 4) == 0) {
+            Serial.print("Copy phone number ");
+            Serial.println(replybuffer);
+            memcpy(calling_number, replybuffer + 8, 11);
+            calling_number[11] = 0;
+            timeout = old_timeout + 100; // Increase the timeout somehow
+            replyidx = 0;
+            continue;
+          } else {
+            timeout = 0;
+            break;
+          }
         }
       }
       replybuffer[replyidx] = c;

@@ -190,7 +190,9 @@ class Adafruit_FONA : public Stream {
        uint16_t *v, char divider = ',', uint8_t index=0);
   uint8_t read_rdy(void);
   uint8_t readline(uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS, boolean multiline = false);
+  uint8_t readring(void);
   char replybuffer[255];
+  char calling_number[12];
 
 
  protected:
