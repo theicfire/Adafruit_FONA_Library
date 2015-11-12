@@ -49,14 +49,25 @@ uint8_t Adafruit_FONA::type(void) {
 boolean Adafruit_FONA::begin(Stream &port) {
   mySerial = &port;
 
-  while (mySerial->available()) mySerial->read();
+  Serial.println("Dump fona serial");
+  while (mySerial->available()) {
+    char c = mySerial->read();
+    Serial.print(c);
+  }
 
-  pinMode(_rstpin, OUTPUT);
-  digitalWrite(_rstpin, HIGH);
-  delay(10);
-  digitalWrite(_rstpin, LOW);
-  delay(100);
-  digitalWrite(_rstpin, HIGH);
+  //pinMode(_rstpin, OUTPUT);
+  //digitalWrite(_rstpin, HIGH);
+  //delay(10);
+  //digitalWrite(_rstpin, LOW);
+  //delay(105);
+  //digitalWrite(_rstpin, HIGH);
+
+  delay(500);
+
+  while (mySerial->available()) {
+    char c = mySerial->read();
+    Serial.print(c);
+  }
 
   if (read_rdy() == 1) {
     // Only need to run these if autobauding
