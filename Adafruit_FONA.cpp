@@ -69,15 +69,13 @@ boolean Adafruit_FONA::begin(Stream &port) {
     Serial.print(c);
   }
 
-  if (read_rdy() == 1) {
-    // Only need to run these if autobauding
-    sendCheckReply(F("AT"), F("OK"));
-    delay(100);
-    sendCheckReply(F("AT"), F("OK"));
-    delay(100);
-    sendCheckReply(F("AT"), F("OK"));
-    delay(100);
-  }
+  // Only need to run these if autobauding
+  sendCheckReply(F("AT"), F("OK"));
+  delay(100);
+  sendCheckReply(F("AT"), F("OK"));
+  delay(100);
+  sendCheckReply(F("AT"), F("OK"));
+  delay(100);
 
   // turn off Echo!
   sendCheckReply(F("ATE0"), F("OK"));
