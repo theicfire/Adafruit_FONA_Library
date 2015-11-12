@@ -1557,9 +1557,9 @@ uint16_t Adafruit_FONA::readRaw(uint16_t b) {
 
 uint8_t Adafruit_FONA::readring(void) {
   uint16_t replyidx = 0;
-  bool done = false;
+  uint16_t timeout = 5000;
 
-  while (true) {
+  while (timeout--) {
     if (replyidx >= 254) {
       //Serial.println(F("SPACE"));
       break;
