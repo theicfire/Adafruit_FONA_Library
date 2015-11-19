@@ -1567,6 +1567,10 @@ uint16_t Adafruit_FONA::readRaw(uint16_t b) {
 uint8_t Adafruit_FONA::readring(void) {
   uint16_t replyidx = 0;
   uint16_t timeout = 3000;
+  if (calling_number[0] != 0) {
+    return -1; // Overwriting a different calling_number
+  }
+  Serial.println("readring");
 
   while (timeout--) {
     if (replyidx >= 254) {
