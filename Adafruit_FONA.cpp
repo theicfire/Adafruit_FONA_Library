@@ -1595,7 +1595,11 @@ uint8_t Adafruit_FONA::readring(void) {
         } else if (memcmp("+CLIP", replybuffer, 4) == 0) {
           Serial.print("Copy phone number ");
           Serial.println(replybuffer);
-          memcpy(calling_number, replybuffer + 8, 11);
+          if (replybuffer[8] == '+') {
+            memcpy(calling_number, replybuffer + 9, 11);
+          } else {
+            memcpy(calling_number, replybuffer + 8, 11);
+          }
           calling_number[11] = 0;
           replybuffer[replyidx + 1] = 0;  // null term
           return 1;
