@@ -182,7 +182,7 @@ class Adafruit_FONA : public Stream {
   boolean incomingCallNumber(char* phonenum);
 
   // Helper functions to verify responses.
-  boolean expectReply(const __FlashStringHelper *reply, uint16_t timeout = 10000);
+  boolean expectReply(const __FlashStringHelper *reply, uint16_t timeout = 3000);
   boolean sendCheckReply(const char *send, const char *reply, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
   boolean sendCheckReply(const __FlashStringHelper *send, const __FlashStringHelper *reply, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
   boolean sendParseReply(const __FlashStringHelper *tosend,
