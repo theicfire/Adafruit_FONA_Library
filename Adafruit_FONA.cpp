@@ -1153,7 +1153,7 @@ boolean Adafruit_FONA::TCPconnect(char *server, uint16_t port) {
   flushInput();
 
   // close all old connections
-  if (! sendCheckReply(F("AT+CIPSHUT"), F("SHUT OK"), 3000) ) return false;
+  //if (! sendCheckReply(F("AT+CIPSHUT"), F("SHUT OK"), 3000) ) return false;
 
   // single connection at a time
   if (! sendCheckReply(F("AT+CIPMUX=0"), F("OK")) ) return false;
@@ -1181,7 +1181,7 @@ boolean Adafruit_FONA::TCPconnect(char *server, uint16_t port) {
 }
 
 boolean Adafruit_FONA::TCPclose(void) {
-  return sendCheckReply(F("AT+CIPCLOSE"), F("OK"));
+  return sendCheckReply(F("AT+CIPSHUT"), F("SHUT OK"), 3000);
 }
 
 boolean Adafruit_FONA::TCPconnected(void) {
