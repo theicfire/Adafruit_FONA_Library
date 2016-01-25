@@ -1219,7 +1219,7 @@ boolean Adafruit_FONA::TCPsend(char *packet, uint8_t len) {
   }
 
   mySerial->write(packet, len);
-  readline(3000); // wait up to 3 seconds to send the data
+  readline(6000); // wait up to 3 seconds to send the data
 #ifdef ADAFRUIT_FONA_DEBUG
   Serial.print (F("\t<--- ")); Serial.println(replybuffer);
 #endif
