@@ -15,6 +15,7 @@
   BSD license, all text above must be included in any redistribution
  ****************************************************/
 #include <avr/pgmspace.h>
+#include <avr/wdt.h>
     // next line per http://postwarrior.com/arduino-ethershield-error-prog_char-does-not-name-a-type/
 #define prog_char  char PROGMEM
 
@@ -50,45 +51,32 @@ boolean Adafruit_FONA::begin(Stream &port) {
   mySerial = &port;
 
   Serial.println("Dump fona serial");
-  while (mySerial->available()) {
-    char c = mySerial->read();
-    Serial.print(c);
+  int count = 0;
+  while (!sendCheckReply(F("AT"), F("OK"))) {
+    count += 1;
+    if (count > 30) {
+      return false;
+    }
   }
 
-  //pinMode(_rstpin, OUTPUT);
-  //digitalWrite(_rstpin, HIGH);
-  //delay(10);
-  //digitalWrite(_rstpin, LOW);
-  //delay(105);
-  //digitalWrite(_rstpin, HIGH);
-
-  delay(500);
-
-  while (mySerial->available()) {
-    char c = mySerial->read();
-    Serial.print(c);
+  count = 0;
+  while (count < 5) {
+    if (!sendCheckReply(F("AT"), F("OK"))) {
+      return false;
+    }
+    count += 1;
   }
-
-  // Only need to run these if autobauding
-  sendCheckReply(F("AT"), F("OK"));
-  delay(100);
-  sendCheckReply(F("AT"), F("OK"));
-  delay(100);
-  sendCheckReply(F("AT"), F("OK"));
-  delay(100);
 
   // turn off Echo!
   sendCheckReply(F("ATE0"), F("OK"));
-  delay(100);
   // Turn off SMS URC's
   sendCheckReply(F("AT+CNMI=2,0,0,0,0"), F("OK"));
-  delay(100);
   // Ring number
   sendCheckReply(F("AT+CLIP=1"), F("OK"));
-  delay(100);
   // Turn off sim card URC's
   sendCheckReply(F("AT+CSMINS=0"), F("OK"));
-  delay(100);
+  // Turn off "sms ready" and "call ready" URC's
+  sendCheckReply(F("AT+CIURC=0"), F("OK"));
 
   if (! sendCheckReply(F("ATE0"), F("OK"))) {
     return false;
@@ -97,7 +85,6 @@ boolean Adafruit_FONA::begin(Stream &port) {
   // turn on hangupitude
   sendCheckReply(F("AT+CVHU=0"), F("OK"));
 
-  delay(100);
   getReply(F("ATI"));
   if (strstr_P(replybuffer, (prog_char *)F("SIM808 R14")) != 0) {
     _type = FONA808_V2;
@@ -110,10 +97,10 @@ boolean Adafruit_FONA::begin(Stream &port) {
   } else if (strstr_P(replybuffer, (prog_char *)F("SIMCOM_SIM5320E")) != 0) {
     _type = FONA3G_E;
   }
+  sendCheckReply(F("AT&W"), F("OK"));
 
   return true;
 }
-
 
 /********* Serial port ********************************************/
 uint8_t Adafruit_FONA::read_rdy(void) {
@@ -131,7 +118,7 @@ uint8_t Adafruit_FONA::read_rdy(void) {
 }
 boolean Adafruit_FONA::setBaudrate(uint16_t baud) {
   return sendCheckReply(F("AT+IPR="), baud, F("OK")) &&
-    sendCheckReply(F("AT&W0"), F("OK"));
+    sendCheckReply(F("AT&W"), F("OK"));
 }
 
 /********* Real Time Clock ********************************************/
@@ -1209,7 +1196,9 @@ boolean Adafruit_FONA::TCPsend(char *packet, uint8_t len) {
 
   mySerial->print(F("AT+CIPSEND="));
   mySerial->println(len);
-  readline();
+  wdt_reset();
+  readline(4000);
+  wdt_reset();
 #ifdef ADAFRUIT_FONA_DEBUG
   Serial.print (F("\t<--- ")); Serial.println(replybuffer);
 #endif
@@ -1636,6 +1625,10 @@ uint8_t Adafruit_FONA::readline(uint16_t timeout, boolean multiline) {
           if (memcmp("RING", replybuffer, 4) == 0) {
             Serial.println("RING skipped");
             timeout = old_timeout + 100; // Increase the timeout somehow
+            replyidx = 0;
+            continue;
+          } else if (memcmp("SMS Ready", replybuffer, 9) == 0) {
+            Serial.println("sms ready skipped");
             replyidx = 0;
             continue;
           } else if (memcmp("+CLIP", replybuffer, 4) == 0) {
