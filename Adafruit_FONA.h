@@ -192,6 +192,7 @@ class Adafruit_FONA : public Stream {
   uint8_t readring(void);
   char replybuffer[255];
   char calling_number[12];
+  uint8_t getReply(const char *send, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
 
 
  protected:
@@ -209,7 +210,6 @@ class Adafruit_FONA : public Stream {
 
   void flushInput();
   uint16_t readRaw(uint16_t b);
-  uint8_t getReply(const char *send, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
   uint8_t getReply(const __FlashStringHelper *send, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
   uint8_t getReply(const __FlashStringHelper *prefix, char *suffix, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
   uint8_t getReply(const __FlashStringHelper *prefix, int32_t suffix, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);

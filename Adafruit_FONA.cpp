@@ -67,6 +67,23 @@ boolean Adafruit_FONA::begin(Stream &port) {
     count += 1;
   }
 
+  // I put this ATI first because it's got a response that's not OK, so it's not ambiguous from the other commands. Now after running this, I know that the FONA is properly listening to me.
+  getReply(F("ATI"));
+  flushInput();
+  if (strstr_P(replybuffer, (prog_char *)F("SIM808 R14")) != 0) {
+    _type = FONA808_V2;
+  } else if (strstr_P(replybuffer, (prog_char *)F("SIM808 R13")) != 0) {
+    _type = FONA808_V1;
+  } else if (strstr_P(replybuffer, (prog_char *)F("SIM800 R13")) != 0) {
+    _type = FONA800L;
+  } else if (strstr_P(replybuffer, (prog_char *)F("SIMCOM_SIM5320A")) != 0) {
+    _type = FONA3G_A;
+  } else if (strstr_P(replybuffer, (prog_char *)F("SIMCOM_SIM5320E")) != 0) {
+    _type = FONA3G_E;
+  } else {
+    return false;
+  }
+
   // turn off Echo!
   sendCheckReply(F("ATE0"), F("OK"));
   // Turn off SMS URC's
@@ -85,18 +102,6 @@ boolean Adafruit_FONA::begin(Stream &port) {
   // turn on hangupitude
   sendCheckReply(F("AT+CVHU=0"), F("OK"));
 
-  getReply(F("ATI"));
-  if (strstr_P(replybuffer, (prog_char *)F("SIM808 R14")) != 0) {
-    _type = FONA808_V2;
-  } else if (strstr_P(replybuffer, (prog_char *)F("SIM808 R13")) != 0) {
-    _type = FONA808_V1;
-  } else if (strstr_P(replybuffer, (prog_char *)F("SIM800 R13")) != 0) {
-    _type = FONA800L;
-  } else if (strstr_P(replybuffer, (prog_char *)F("SIMCOM_SIM5320A")) != 0) {
-    _type = FONA3G_A;
-  } else if (strstr_P(replybuffer, (prog_char *)F("SIMCOM_SIM5320E")) != 0) {
-    _type = FONA3G_E;
-  }
   sendCheckReply(F("AT&W"), F("OK"));
 
   return true;
@@ -1137,7 +1142,7 @@ boolean Adafruit_FONA::getGSMLoc(float *lat, float *lon) {
 
 
 boolean Adafruit_FONA::TCPconnect(char *server, uint16_t port) {
-  flushInput();
+  //flushInput();
 
   // close all old connections
   //if (! sendCheckReply(F("AT+CIPSHUT"), F("SHUT OK"), 3000) ) return false;
@@ -1532,9 +1537,11 @@ inline void Adafruit_FONA::flush() {
 void Adafruit_FONA::flushInput() {
     // Read all available serial input to flush pending data.
     uint16_t timeoutloop = 0;
-    while (timeoutloop++ < 40) {
+    while (timeoutloop++ < 1000) {
         while(available()) {
-            read();
+            char c = read();
+            Serial.print(c);
+            Serial.print('*');
             timeoutloop = 0;  // If char was received reset the timer
         }
         delay(1);
@@ -1557,51 +1564,9 @@ uint16_t Adafruit_FONA::readRaw(uint16_t b) {
 }
 
 uint8_t Adafruit_FONA::readring(void) {
-  uint16_t replyidx = 0;
-  uint16_t timeout = 3000;
-  //if (calling_number[0] != 0) {
-    //return -1; // Overwriting a different calling_number
-  //}
-  Serial.println("readring");
-
-  while (timeout--) {
-    if (replyidx >= 254) {
-      //Serial.println(F("SPACE"));
-      break;
-    }
-
-    while(mySerial->available()) {
-      char c = mySerial->read();
-      if (c == '\r') continue;
-      if (c == 0xA) {
-        if (replyidx == 0)   // the first 0x0A is ignored
-          continue;
-
-        if (memcmp("RING", replybuffer, 4) == 0) {
-          Serial.println("RING skipped");
-          replyidx = 0;
-          continue;
-        } else if (memcmp("+CLIP", replybuffer, 4) == 0) {
-          Serial.print("Copy phone number ");
-          Serial.println(replybuffer);
-          if (replybuffer[8] == '+') {
-            memcpy(calling_number, replybuffer + 9, 11);
-          } else {
-            memcpy(calling_number, replybuffer + 8, 11);
-          }
-          calling_number[11] = 0;
-          replybuffer[replyidx + 1] = 0;  // null term
-          return 1;
-        } else {
-          return -1;
-        }
-      }
-      replybuffer[replyidx] = c;
-      replyidx++;
-    }
-    delay(1);
-  }
-  return -1;
+  //flushInput();
+  readline(1000);
+  return 0;
 }
 
 uint8_t Adafruit_FONA::readline(uint16_t timeout, boolean multiline) {
@@ -1624,19 +1589,25 @@ uint8_t Adafruit_FONA::readline(uint16_t timeout, boolean multiline) {
         if (!multiline) {
           if (memcmp("RING", replybuffer, 4) == 0) {
             Serial.println("RING skipped");
-            timeout = old_timeout + 100; // Increase the timeout somehow
+            //timeout = old_timeout + 100; // Increase the timeout somehow
+            timeout = 1000; // Increase the timeout somehow
             replyidx = 0;
             continue;
           } else if (memcmp("SMS Ready", replybuffer, 9) == 0) {
             Serial.println("sms ready skipped");
             replyidx = 0;
             continue;
-          } else if (memcmp("+CLIP", replybuffer, 4) == 0) {
+          } else if (memcmp("NO CARRIER", replybuffer, 9) == 0) { // TODO 10
+            Serial.println("sms ready skipped");
+            replyidx = 0;
+            continue;
+          } else if (memcmp("+CLIP", replybuffer, 4) == 0) { // TODO 5
             Serial.print("Copy phone number ");
             Serial.println(replybuffer);
             memcpy(calling_number, replybuffer + 8, 11);
             calling_number[11] = 0;
-            timeout = old_timeout + 100; // Increase the timeout somehow
+            //timeout = old_timeout + 100; // Increase the timeout somehow
+            timeout = 1000; // Increase the timeout somehow
             replyidx = 0;
             continue;
           } else {
@@ -1645,6 +1616,8 @@ uint8_t Adafruit_FONA::readline(uint16_t timeout, boolean multiline) {
           }
         }
       }
+      Serial.print(c);
+      Serial.print('|');
       replybuffer[replyidx] = c;
       //Serial.print(c, HEX); Serial.print("#"); Serial.println(c);
       replyidx++;
@@ -1661,7 +1634,8 @@ uint8_t Adafruit_FONA::readline(uint16_t timeout, boolean multiline) {
 }
 
 uint8_t Adafruit_FONA::getReply(const char *send, uint16_t timeout) {
-  flushInput();
+  //flushInput();
+  readline(200);
 
 #ifdef ADAFRUIT_FONA_DEBUG
     Serial.print("\t---> "); Serial.println(send);
@@ -1677,7 +1651,8 @@ uint8_t Adafruit_FONA::getReply(const char *send, uint16_t timeout) {
 }
 
 uint8_t Adafruit_FONA::getReply(const __FlashStringHelper *send, uint16_t timeout) {
-  flushInput();
+  //flushInput();
+  readline(200);
 
 #ifdef ADAFRUIT_FONA_DEBUG
   Serial.print("\t---> "); Serial.println(send);
@@ -1694,7 +1669,8 @@ uint8_t Adafruit_FONA::getReply(const __FlashStringHelper *send, uint16_t timeou
 
 // Send prefix, suffix, and newline. Return response (and also set replybuffer with response).
 uint8_t Adafruit_FONA::getReply(const __FlashStringHelper *prefix, char *suffix, uint16_t timeout) {
-  flushInput();
+  //flushInput();
+  readline(200);
 
 #ifdef ADAFRUIT_FONA_DEBUG
   Serial.print("\t---> "); Serial.print(prefix); Serial.println(suffix);
@@ -1712,7 +1688,8 @@ uint8_t Adafruit_FONA::getReply(const __FlashStringHelper *prefix, char *suffix,
 
 // Send prefix, suffix, and newline. Return response (and also set replybuffer with response).
 uint8_t Adafruit_FONA::getReply(const __FlashStringHelper *prefix, int32_t suffix, uint16_t timeout) {
-  flushInput();
+  //flushInput();
+  readline(200);
 
 #ifdef ADAFRUIT_FONA_DEBUG
   Serial.print("\t---> "); Serial.print(prefix); Serial.println(suffix, DEC);
@@ -1730,7 +1707,8 @@ uint8_t Adafruit_FONA::getReply(const __FlashStringHelper *prefix, int32_t suffi
 
 // Send prefix, suffix, suffix2, and newline. Return response (and also set replybuffer with response).
 uint8_t Adafruit_FONA::getReply(const __FlashStringHelper *prefix, int32_t suffix1, int32_t suffix2, uint16_t timeout) {
-  flushInput();
+  //flushInput();
+  readline(200);
 
 #ifdef ADAFRUIT_FONA_DEBUG
   Serial.print("\t---> "); Serial.print(prefix);
@@ -1751,7 +1729,8 @@ uint8_t Adafruit_FONA::getReply(const __FlashStringHelper *prefix, int32_t suffi
 
 // Send prefix, ", suffix, ", and newline. Return response (and also set replybuffer with response).
 uint8_t Adafruit_FONA::getReplyQuoted(const __FlashStringHelper *prefix, const __FlashStringHelper *suffix, uint16_t timeout) {
-  flushInput();
+  //flushInput();
+  readline(200);
 
 #ifdef ADAFRUIT_FONA_DEBUG
   Serial.print("\t---> "); Serial.print(prefix);
