@@ -1616,8 +1616,6 @@ uint8_t Adafruit_FONA::readline(uint16_t timeout, boolean multiline) {
           }
         }
       }
-      Serial.print(c);
-      Serial.print('|');
       replybuffer[replyidx] = c;
       //Serial.print(c, HEX); Serial.print("#"); Serial.println(c);
       replyidx++;
