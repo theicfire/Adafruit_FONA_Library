@@ -50,9 +50,9 @@ uint8_t Adafruit_FONA::type(void) {
 boolean Adafruit_FONA::begin(Stream &port) {
   mySerial = &port;
 
-  Serial.println("Dump fona serial");
   int count = 0;
-  while (!sendCheckReply(F("AT"), F("OK"))) {
+  // Turn off echo
+  while (!sendCheckReply(F("ATE0"), F("OK"))) {
     count += 1;
     if (count > 30) {
       return false;
@@ -84,8 +84,6 @@ boolean Adafruit_FONA::begin(Stream &port) {
     return false;
   }
 
-  // turn off Echo!
-  sendCheckReply(F("ATE0"), F("OK"));
   // Turn off SMS URC's
   sendCheckReply(F("AT+CNMI=2,0,0,0,0"), F("OK"));
   // Ring number
@@ -94,10 +92,6 @@ boolean Adafruit_FONA::begin(Stream &port) {
   sendCheckReply(F("AT+CSMINS=0"), F("OK"));
   // Turn off "sms ready" and "call ready" URC's
   sendCheckReply(F("AT+CIURC=0"), F("OK"));
-
-  if (! sendCheckReply(F("ATE0"), F("OK"))) {
-    return false;
-  }
 
   // turn on hangupitude
   sendCheckReply(F("AT+CVHU=0"), F("OK"));
