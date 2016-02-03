@@ -1598,9 +1598,13 @@ uint8_t Adafruit_FONA::readline(uint16_t timeout, boolean multiline) {
           } else if (memcmp("+CLIP", replybuffer, 4) == 0) { // TODO 5
             Serial.print("Copy phone number ");
             Serial.println(replybuffer);
-            memcpy(calling_number, replybuffer + 8, 11);
+            if (replybuffer[8] == '+') {
+              memcpy(calling_number, replybuffer + 9, 11);
+            } else {
+              memcpy(calling_number, replybuffer + 8, 11);
+            }
             calling_number[11] = 0;
-            timeout = old_timeout; // Increase the timeout somehow
+            timeout = old_timeout;
             replyidx = 0;
             continue;
           } else {
