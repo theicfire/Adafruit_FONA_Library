@@ -1564,7 +1564,6 @@ uint16_t Adafruit_FONA::readRaw(uint16_t b) {
 }
 
 uint8_t Adafruit_FONA::readring(void) {
-  //flushInput();
   readline(1000);
   return 0;
 }
@@ -1589,16 +1588,17 @@ uint8_t Adafruit_FONA::readline(uint16_t timeout, boolean multiline) {
         if (!multiline) {
           if (memcmp("RING", replybuffer, 4) == 0) {
             Serial.println("RING skipped");
-            //timeout = old_timeout + 100; // Increase the timeout somehow
-            timeout = 1000; // Increase the timeout somehow
+            timeout = old_timeout;
             replyidx = 0;
             continue;
           } else if (memcmp("SMS Ready", replybuffer, 9) == 0) {
             Serial.println("sms ready skipped");
+            timeout = old_timeout;
             replyidx = 0;
             continue;
           } else if (memcmp("NO CARRIER", replybuffer, 9) == 0) { // TODO 10
             Serial.println("sms ready skipped");
+            timeout = old_timeout;
             replyidx = 0;
             continue;
           } else if (memcmp("+CLIP", replybuffer, 4) == 0) { // TODO 5
@@ -1606,8 +1606,7 @@ uint8_t Adafruit_FONA::readline(uint16_t timeout, boolean multiline) {
             Serial.println(replybuffer);
             memcpy(calling_number, replybuffer + 8, 11);
             calling_number[11] = 0;
-            //timeout = old_timeout + 100; // Increase the timeout somehow
-            timeout = 1000; // Increase the timeout somehow
+            timeout = old_timeout; // Increase the timeout somehow
             replyidx = 0;
             continue;
           } else {
